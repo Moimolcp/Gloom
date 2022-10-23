@@ -1,0 +1,517 @@
+<html>
+  <head>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
+    <script type="text/javascript">
+
+    function show_data(data){      
+      
+      $(".scenario").addClass('no_display');
+
+      $("#playtime_session").text(data.play_time_hours+"H "+data.play_time_minutes+"M")
+
+      for (var i = 0; i < data.scenarios.length; i++) {
+        number = data.scenarios[i]['number']
+        $("#s"+number).removeClass('no_display');
+        if (data.scenarios[i]['complete']){
+          $("#s"+number).attr('src', "https://gloomhaven-storyline.com/img/scenarios/gh/"+number+"_c.webp")
+        }else{
+          $("#s"+number).attr('src', "https://gloomhaven-storyline.com/img/scenarios/gh/"+number+".webp")
+        }
+      }
+
+      $(".achivement").addClass('no_display');
+
+      for (var i = 0; i < data.achivements.length; i++) {
+        name = data.achivements[i]
+        name = name.split(' ').map(e=>e[0].toUpperCase()).reduce((a,b)=> {return a+b})
+        number = ""
+        if ((name == 'AT' || name == 'EOC') && Number(data.achivements[i].slice(-1)) > 1){
+          number = data.achivements[i].slice(-1)
+        }
+        $("#G"+name).removeClass('no_display');
+        $("#G"+name).attr('src', "https://gloomhaven-storyline.com/img/achievements/G"+name+number+".webp")
+      }
+
+      $(".character").addClass('gray');
+
+      $("#"+data.W).removeClass('gray');
+      $("#"+data.J).removeClass('gray');
+      $("#"+data.L).removeClass('gray');
+
+      $("#WL").text("Lvl:" + data.WL)
+      $("#LL").text("Lvl:" + data.LL)
+      $("#JL").text("Lvl:" + data.JL)
+
+      if(data.C){
+        $("#"+data.C).removeClass('gray');        
+        $("#CL").text("Lvl:" + data.CL)
+      }
+
+
+    }
+
+    $.getJSON("data.json", function(json) {
+      // this will show the info it in firebug console
+
+      google.charts.load("current", {packages:["calendar","corechart"]});
+      google.charts.setOnLoadCallback(drawChart);
+      show_data(json[json.length-1])
+      function drawChart() {
+        var dataTable = new google.visualization.DataTable();
+        dataTable.addColumn({ type: 'date', id: 'Date' });
+        dataTable.addColumn({ type: 'number', id: 'Won/Loss' });       
+
+        for (var i = 0; i < json.length; i++) {
+          date = json[i]['date'].split('/')
+          dataTable.addRows([[new Date(date[2],date[0]-1,date[1]) , 3]])
+        }
+
+        dataTable.addRows([[new Date(2022,0,1) , 0],]);
+
+        var chart = new google.visualization.Calendar(document.getElementById('calendar_basic'));
+
+        var options = {
+          title: "Gloomhaven Attendance",
+          width: "900",
+          height: "165"
+        };
+
+        chart.draw(dataTable, options);
+
+        google.visualization.events.addListener(chart, 'select', selectHandler);
+
+        function selectHandler() {
+          var selection = chart.getSelection();
+          if (selection.length > 0 && 'row' in selection[0]) {
+            show_data(json[selection[0]['row']])
+          }          
+        }
+
+
+        var data = new google.visualization.DataTable();
+        data.addColumn('number', 'Session');
+        data.addColumn('number', 'Gold');
+
+        var total_hours = 0;
+        var total_minutes = 0;
+
+        for (var i = 0; i < json.length; i++) {
+          value = json[i]['total_donations']
+
+          total_hours += json[i]['play_time_hours']
+          total_minutes += json[i]['play_time_minutes']
+
+          
+          data.addRows([[i+1,Number(value)]])
+        }
+
+        total_hours += Math.floor(total_minutes/60); 
+        total_minutes = total_minutes % 60
+
+        $("#time").text(total_hours+"H "+total_minutes+"M")
+
+        var options = {
+          hAxis: {
+            title: 'Session'
+          },
+          vAxis: {
+            title: 'Donations'
+          },
+          width: "470",
+          height: "150",
+        };
+
+        var chart_donations = new google.visualization.LineChart(document.getElementById('chart_donations'));
+
+        chart_donations.draw(data, options);
+
+        var data = new google.visualization.DataTable();
+        data.addColumn('number', 'Session');
+        data.addColumn('number', 'Rep');
+
+        for (var i = 0; i < json.length; i++) {
+          value = json[i]['total_reputation']
+          
+          data.addRows([[i+1,Number(value)]])
+        }
+
+        var options = {
+          hAxis: {
+            title: 'Session'
+          },
+          vAxis: {
+            title: 'Reputation'
+          },
+          width: "470",
+        };
+
+        var chart_reputation = new google.visualization.LineChart(document.getElementById('chart_reputation'));
+
+        chart_reputation.draw(data, options);
+
+        var data = new google.visualization.DataTable();
+        data.addColumn('number', 'Session');
+        data.addColumn('number', 'Prosp Points');
+
+        for (var i = 0; i < json.length; i++) {
+          value = json[i]['prosperity_points']
+          
+          data.addRows([[i+1,Number(value)]])
+        }
+
+        var options = {
+          hAxis: {
+            title: 'Session'
+          },
+          vAxis: {
+            title: 'Prosperity Points'
+          },
+          width: "470",
+        };
+
+        var chart_prosperity_points = new google.visualization.LineChart(document.getElementById('chart_prosperity_points'));
+
+        chart_prosperity_points.draw(data, options);
+
+        var data = new google.visualization.DataTable();
+        data.addColumn('number', 'Session');
+        data.addColumn('number', 'Prosperity');
+
+        for (var i = 0; i < json.length; i++) {
+          value = json[i]['prosperity']
+          
+          data.addRows([[i+1,Number(value)]])
+        }
+
+        var options = {
+          hAxis: {
+            title: 'Session'
+          },
+          vAxis: {
+            title: 'Prosperity'
+          },
+          width: "470",
+        };
+
+        var chart_prosperity = new google.visualization.LineChart(document.getElementById('chart_prosperity'));
+
+        chart_prosperity.draw(data, options);
+
+
+
+      }
+
+    });
+    </script>
+  </head>
+  <body>
+    <style>
+      .container{
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .left_container{
+        flex-grow: 1;
+        flex-basis: 900px;
+      }
+
+      .map_container{
+        flex-grow:  2;
+        margin: 0px;
+        max-height: 900px;
+        max-width: 900px;
+
+        overflow: hidden;
+      }
+
+      #map .map {
+        left: 0;
+        position: absolute;
+        width: 100%;
+      }
+      .absolute{
+        position: absolute;
+      }
+      .no_display{
+        display: none;
+      }
+
+      .thumbnails {
+        display: flex;
+        justify-content: center;
+        max-width: 920px;
+      }
+
+      .character {
+        padding: 0.5rem;
+        width: 72px;
+        height: 72px;
+      }
+
+      .chart{
+        display: flex;
+        justify-content: center;
+        max-width: 920px;
+
+      }
+
+      .lvl{
+        border-radius: 50%;
+        display: inline-flex;
+        vertical-align:top;
+        justify-content: center;
+        align-items: center;
+        width: 78px;
+        height: 78px;
+        font-size: 30px;
+        font-family: "Arial";
+        color: #888888;
+      }
+      .gray{
+        filter: grayscale(1);
+      }
+
+      .playtime_text{
+        font-family: "Arial";
+        color: #888888;
+        font-size: 25px;
+        margin-left: 10px;
+        margin-top: 5px;
+        margin-bottom: 5px;
+      }
+
+    </style>
+    <div class="container">
+    <div class="left_container" >
+      <p class="playtime_text">PlayTime: <a id="time">12H 10M</a> Session: <a id="playtime_session">12H 10M</a></p>  
+      <div id="calendar_basic" class="chart" ></div>
+      <div class="container">
+        <div id="chart_donations"  ></div>
+        <div id="chart_reputation" ></div>
+      </div>
+      <div class="container">
+        <div id="chart_prosperity_points" ></div>
+        <div id="chart_prosperity" ></div>
+      </div>
+      <div class=thumbnails>        
+        <img id="CR" class="character" src="img/CR.png" alt="">
+        <img id="SS" class="character" src="img/SS.png" alt="">
+        <img id="PH" class="character" src="img/PH.png" alt="">
+        <img id="SU" class="character" src="img/SU.png" alt="">
+        <img id="SB" class="character" src="img/SB.png" alt="">
+        <div class="lvl">
+          <p id="WL">Lvl:1<p>
+        </div>
+      </div>
+      <div class=thumbnails>        
+        <img id="SW" class="character" src="img/SW.png" alt="">
+        <img id="EL" class="character" src="img/EL.png" alt="">
+        <img id="DS" class="character" src="img/DS.png" alt="">
+        <img id="MT" class="character" src="img/MT.png" alt="">
+        <img id="NS" class="character" src="img/NS.png" alt="">
+        <div class="lvl">
+          <p id="LL">Lvl:1<p>
+        </div>
+      </div>
+      <div class=thumbnails>        
+        <img id="BR" class="character" src="img/BR.png" alt="">
+        <img id="RG" class="character" src="img/RG.png" alt="">
+        <img id="SK" class="character" src="img/SK.png" alt="">
+        <img id="BE" class="character" src="img/BE.png" alt="">
+        <img id="SC" class="character" src="img/SC.png" alt="">
+        <div class="lvl">
+          <p id="JL">Lvl:1<p>
+        </div>
+      </div>
+      <div class=thumbnails>        
+        <img id="TI" class="character" src="img/TI.png" alt="">
+        <div class="lvl">
+          <p id="CL">Lvl:3<p>
+        </div>
+      </div>
+    </div>
+    <div class="map_container">
+    <div id="map" style="width: 2606px; height: 2155px; transform-origin: 0px 0px 0px; transform: matrix(0.4, 0, 0, 0.4, 0, 60);">
+
+      <img src="https://gloomhaven-storyline.com/img/maps/fc/highres.webp" alt="Gloomhaven map" loading="lazy" class="map" style="top: -184px;" width="">
+      <ul>
+        <li class="absolute" style="top: -174px; left: 30.8772%;">
+          <img id = "GTMF" class="achivement"src="https://gloomhaven-storyline.com/img/achievements/GTMF.webp" alt="La comerciante huye" class="cursor-pointer" style="" width="96.5">
+        </li>
+        <li class="absolute" style="top: -174px; left: 21.2519%;">
+          <img id = "GCRM" class="achivement"src="https://gloomhaven-storyline.com/img/achievements/GCRM.webp" alt="Gobierno de la ciudad: Militarista" class="cursor-pointer" style="" width="91.5">
+        </li>
+        <li class="absolute" style="top: -174px; left: 45.4581%;">
+          <img id = "GTPE" class="achivement"src="https://gloomhaven-storyline.com/img/achievements/GTPE.webp" alt="El poder de la mejora" class="cursor-pointer" style="" width="93.5">
+        </li>
+        <li class="absolute" style="top: -174px; left: 55.1787%;">
+          <img id = "GTRN" class="achivement"src="https://gloomhaven-storyline.com/img/achievements/GTRN.webp" alt="La grieta neutralizada" class="cursor-pointer" style="" width="84.5">
+        </li>
+        <li class="absolute" style="top: -174px; left: 74.334%;">
+          <img id = "GAT" class=" achivement"src="https://gloomhaven-storyline.com/img/achievements/GAT3.webp" alt="Tecnología antigua" class="cursor-pointer" style="" width="109">
+        </li>
+        <li class="absolute" style="top: -174px; left: 40.7884%;">
+          <img id = "GTED" class="achivement"src="https://gloomhaven-storyline.com/img/achievements/GTED.webp" alt="El filo de la oscuridad" class="cursor-pointer" style="" width="93">
+        </li>
+        <li class="absolute" style="top: -174px; left: 26.0169%;">
+          <img id = "GAC" class=" achivement"src="https://gloomhaven-storyline.com/img/achievements/GAC.webp" alt="Artefacto purificado" class="cursor-pointer" style="" width="98">
+        </li>
+        <li class="absolute" style="top: -174px; left: 12.389%;">
+          <img id = "GTDA" class="achivement"src="https://gloomhaven-storyline.com/img/achievements/GTDA.webp" alt="El draco auxiliado" class="cursor-pointer" style="" width="94">
+        </li>
+        <li class="absolute" style="top: -174px; left: 16.8681%;">
+          <img id = "GTVS" class="achivement"src="https://gloomhaven-storyline.com/img/achievements/GTVS.webp" alt="La Voz silenciada" class="cursor-pointer" style="" width="94">
+        </li>
+        <li class="absolute" style="top: -174px; left: 50.3184%;">
+          <img id = "GWB" class=" achivement"src="https://gloomhaven-storyline.com/img/achievements/GWB.webp" alt="Respiración subacuática" class="cursor-pointer" style="" width="93">
+        </li>
+        <li class="absolute" style="top: -174px; left: 64.5181%;">
+          <img id = "GEOC" class="achivement"src="https://gloomhaven-storyline.com/img/achievements/GEOC3.webp" alt="El fin de la corrupción" class="cursor-pointer" style="" width="107.5">
+        </li>
+        <li class="absolute" style="top: -174px; left: 69.9502%;">
+          <img id = "GEOG" class="achivement"src="https://gloomhaven-storyline.com/img/achievements/GEOG.webp" alt="El fin de la Penumbra" class="cursor-pointer" style="" width="83">
+        </li>
+        </ul>
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/1_c.webp" alt="Túmulo Negro" class="absolute scenario " style="left: 45.1913%; top: 41.6%; transform: scale(0.79);" id="s1" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/2_c.webp" alt="Guarida del Túmulo" class="absolute scenario " style="left: 49.3178%; top: 41%; transform: scale(0.79);" id="s2" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/3_c.webp" alt="Campamento inox" class="absolute scenario " style="left: 13.8852%; top: 43.585%; transform: scale(0.79);" id="s3" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/4_c.webp" alt="Cripta de los Malditos" class="absolute scenario " style="left: 45.5725%; top: 31.19%; transform: scale(0.79);" id="s4" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/5_c.webp" alt="Cripta Ruinosa" class="absolute scenario " style="left: 26.8937%; top: 26.58%; transform: scale(0.79);" id="s5" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/6_c.webp" alt="Cripta decadente" class="absolute scenario " style="left: 41.9797%; top: 38.3%; transform: scale(0.79);" id="s6" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/7_c.webp" alt="Gruta trepidante" class="absolute scenario " style="left: 55.0453%; top: 19.85%; transform: scale(0.79);" id="s7" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/8_c.webp" alt="Almacén de Gloomhaven" class="absolute scenario " style="left: 80.0329%; top: 18.1%; transform: scale(0.79);" id="s8" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/9.webp" alt="Mina de diamantes" class="absolute scenario " style="left: 10.0065%; top: 70.65%; transform: scale(0.79);" id="s9" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/10_c.webp" alt="Plano del Poder Elemental" class="absolute scenario " style="left: 29.7117%; top: 23.56%; transform: scale(0.79);" id="s10" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/13_c.webp" alt="Templo del Vidente" class="absolute scenario " style="left: 17.3637%; top: 84.42%; transform: scale(0.79);" id="s13" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/14_c.webp" alt="Hondonada Helada" class="absolute scenario " style="left: 45.3152%; top: 19.33%; transform: scale(0.79);" id="s14" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/15_c.webp" alt="Altar de la fuerza" class="absolute scenario " style="left: 48.765%; top: 16.8%; transform: scale(0.79);" id="s15" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/16_c.webp" alt="El paso de la montaña" class="absolute scenario " style="left: 27.1129%; top: 18.92%; transform: scale(0.79);" id="s16" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/17_c.webp" alt="Isla perdida" class="absolute scenario " style="left: 80.3856%; top: 59.235%; transform: scale(0.79);" id="s17" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/18_c.webp" alt="Cloacas abandonadas" class="absolute scenario " style="left: 65.088%; top: 20.895%; transform: scale(0.79);" id="s18" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/19_c.webp" alt="Cripta olvidada" class="absolute scenario " style="left: 32.9738%; top: 74.64%; transform: scale(0.79);" id="s19" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/20_c.webp" alt="Santuario de la nigromante" class="absolute scenario " style="left: 56.227%; top: 44.9%; transform: scale(0.79);" id="s20" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/21_c.webp" alt="Trono infernal" class="absolute scenario " style="left: 32.6402%; top: 22.6%; transform: scale(0.79);" id="s21" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/22_c.webp" alt="Templo de los Elementos" class="absolute scenario " style="left: 37.9961%; top: 64.25%; transform: scale(0.79);" id="s22" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/23_c.webp" alt="Ruinas profundas" class="absolute scenario " style="left: 69.9502%; top: 19.85%; transform: scale(0.79);" id="s23" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/24_c.webp" alt="Cámara de los Ecos" class="absolute scenario " style="left: 23.8727%; top: 19.67%; transform: scale(0.79);" id="s24" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/25_c.webp" alt="Ascenso al Risco de Hielo" class="absolute scenario " style="left: 19.8891%; top: 13.07%; transform: scale(0.79);" id="s25" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/26_c.webp" alt="Antiguo aljibe" class="absolute scenario " style="left: 70.0455%; top: 23.3%; transform: scale(0.79);" id="s26" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/27_c.webp" alt="Grieta destructiva" class="absolute scenario " style="left: 27.8467%; top: 30.6%; transform: scale(0.79);" id="s27" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/28_c.webp" alt="Cámara ritual ultraterrestre" class="absolute scenario " style="left: 17.297%; top: 32.1%; transform: scale(0.79);" id="s28" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/29_c.webp" alt="Santuario de la Penumbra" class="absolute scenario " style="left: 13.2467%; top: 32.5%; transform: scale(0.79);" id="s29" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/30_c.webp" alt="Altar de las profundidades" class="absolute scenario " style="left: 69.4261%; top: 79.37%; transform: scale(0.79);" id="s30" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/31_c.webp" alt="Plano de la Noche" class="absolute scenario " style="left: 72.8664%; top: 8.912%; transform: scale(0.79);" id="s31" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/32.webp" alt="Bosque decrépito" class="absolute scenario " style="left: 51.8623%; top: 67.9%; transform: scale(0.79);" id="s32" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/33_c.webp" alt="Armería savvas" class="absolute scenario " style="left: 29.0951%; top: 10.3%; transform: scale(0.79);" id="s33" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/34.webp" alt="Cumbre calcinada" class="absolute scenario " style="left: 16.2105%; top: 9.27%; transform: scale(0.79);" id="s34" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/35.webp" alt="Almenas de Gloomhaven A" class="absolute scenario " style="left: 64.0416%; top: 9.42%; transform: scale(0.79);" id="s35" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/36.webp" alt="Almenas de Gloomhaven B" class="absolute scenario " style="left: 64.0416%; top: 9.42%; transform: scale(0.79);" id="s36" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/37_c.webp" alt="Fosa maldita" class="absolute scenario " style="left: 81.3481%; top: 39.795%; transform: scale(0.79);" id="s37" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/38_c.webp" alt="Jaula de esclavos" class="absolute scenario " style="left: 10.626%; top: 43%; transform: scale(0.79);" id="s38" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/39_c.webp" alt="Puente traicionero" class="absolute scenario " style="left: 47.5547%; top: 12.73%; transform: scale(0.79);" id="s39" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/42_c.webp" alt="Reino de la Voz" class="absolute scenario " style="left: 18.6788%; top: 19.4%; transform: scale(0.79);" id="s42" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/43_c.webp" alt="Nido de dracos" class="absolute scenario " style="left: 14.4189%; top: 29.3%; transform: scale(0.79);" id="s43" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/44_c.webp" alt="Asalto tribal" class="absolute scenario " style="left: 14.8287%; top: 37.9%; transform: scale(0.79);" id="s44" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/46_c.webp" alt="Cumbre agónica" class="absolute scenario " style="left: 47.5071%; top: 7.34%; transform: scale(0.79);" id="s46" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/47_c.webp" alt="Guarida del ojo que no ve" class="absolute scenario " style="left: 81.8627%; top: 43.47%; transform: scale(0.79);" id="s47" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/48_c.webp" alt="Bosque sombrío" class="absolute scenario " style="left: 5.6227%; top: 32.7%; transform: scale(0.79);" id="s48" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/51_c.webp" alt="El Vacío" class="absolute scenario " style="left: 68.9019%; top: 9.15%; transform: scale(0.79);" id="s51" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/52_c.webp" alt="Sótano nocivo" class="absolute scenario " style="left: 62.6121%; top: 21.643%; transform: scale(0.79);" id="s52" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/53_c.webp" alt="Subsuelo de la cripta" class="absolute scenario " style="left: 49.4226%; top: 34.1%; transform: scale(0.79);" id="s53" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/54_c.webp" alt="Palacio de Hielo" class="absolute scenario " style="left: 38.5965%; top: 23.34%; transform: scale(0.79);" id="s54" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/55_c.webp" alt="Maraña neblinosa" class="absolute scenario " style="left: 21.7284%; top: 43.15%; transform: scale(0.79);" id="s55" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/56_c.webp" alt="Bosque de los bandidos" class="absolute scenario " style="left: 18.0403%; top: 44.67%; transform: scale(0.79);" id="s56" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/57_c.webp" alt="Investigación" class="absolute scenario " style="left: 62.7074%; top: 24.5%; transform: scale(0.79);" id="s57" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/58_c.webp" alt="Cabaña ensangrentada" class="absolute scenario " style="left: 68.9162%; top: 30.105%; transform: scale(0.79);" id="s58" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/63.webp" alt="Foso de magma" class="absolute scenario " style="left: 6.25168%; top: 78.15%; transform: scale(0.79);" id="s63" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/66_c.webp" alt="Cala mecánica" class="absolute scenario " style="left: 64.5181%; top: 41.35%; transform: scale(0.79);" id="s66" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/67_c.webp" alt="Biblioteca arcana" class="absolute scenario " style="left: 9.57765%; top: 63.4%; transform: scale(0.79);" id="s67" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/69.webp" alt="Pozo de los desdichados" class="absolute scenario " style="left: 36.4046%; top: 34.935%; transform: scale(0.79);" id="s69" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/70_c.webp" alt="Isla Encadenada" class="absolute scenario " style="left: 75.6758%; top: 53.4027%; transform: scale(0.79);" id="s70" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/71.webp" alt="Montañas ventosas" class="absolute scenario " style="left: 26.2361%; top: 67.17%; transform: scale(0.79);" id="s71" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/72_c.webp" alt="Arboleda rezumante" class="absolute scenario " style="left: 51.5382%; top: 45.35%; transform: scale(0.79);" id="s72" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/73_c.webp" alt="Cordillera de aludes" class="absolute scenario " style="left: 25.893%; top: 79.61%; transform: scale(0.79);" id="s73" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/77.webp" alt="Cripta de los secretos" class="absolute scenario " style="left: 75.7159%; top: 10.49%; transform: scale(0.79);" id="s77" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/79_c.webp" alt="Templo perdido" class="absolute scenario " style="left: 57.2276%; top: 61.5%; transform: scale(0.79);" id="s79" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/81.webp" alt="Templo del eclipse" class="absolute scenario " style="left: 8.69136%; top: 27.18%; transform: scale(0.79);" id="s81" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/82_c.webp" alt="Montaña ardiente" class="absolute scenario " style="left: 28.8568%; top: 76.5%; transform: scale(0.79);" id="s82" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/83_c.webp" alt="Sombras del interior" class="absolute scenario " style="left: 65.8809%; top: 18.7%; transform: scale(0.79);" id="s83" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/90.webp" alt="Grieta demoníaca" class="absolute scenario " style="left: 32.8118%; top: 58.86%; transform: scale(0.79);" id="s90" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/93_c.webp" alt="Barco naufragado" class="absolute scenario " style="left: 76.4306%; top: 78.263%; transform: scale(0.79);" id="s93" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/94_c.webp" alt="Nido de infestores" class="absolute scenario " style="left: 53.2251%; top: 38.9%; transform: scale(0.79);" id="s94" width="">
+      <img src="https://gloomhaven-storyline.com/img/scenarios/gh/95_c.webp" alt="Cuenta pendiente" class="absolute scenario " style="left: 56.227%; top: 38.65%; transform: scale(0.79);" id="s95" width="">
+      <!---->
+    </div>
+    </div>
+  </div>
+
+        <script>
+
+          var hover_map = false;
+
+          var scale = 0.4;
+          var x = 0;
+          var y = 60;
+
+          var drag = {
+              elem: null,
+              x: 0,
+              y: 0,
+              state: false
+          };
+          var delta = {
+              x: 0,
+              y: 0
+          };
+
+          $('#map').mousedown(function(e) {
+              if (!drag.state) {
+                  drag.elem = this;
+                  drag.x = e.pageX;
+                  drag.y = e.pageY;
+                  drag.state = true;
+              }
+              return false;
+          });
+
+          $('#map').mousemove(function(e) {
+              if (drag.state) {
+                  delta.x = e.pageX - drag.x;
+                  delta.y = e.pageY - drag.y;
+                  x = x+delta.x
+                  y = y+delta.y
+                  $(drag.elem).css({
+                    transform: `matrix(${scale}, 0, 0, ${scale}, ${x}, ${y})`
+                  });
+
+                  drag.x = e.pageX;
+                  drag.y = e.pageY;
+              }
+          });
+
+          $('#map').mouseup(function() {
+              if (drag.state) {
+                drag.state = false;
+              }
+          });
+          
+          $('#map').on('wheel',function(event) {
+            const delta_scale = event.originalEvent.wheelDelta / 120 / 40
+            scale = scale + delta_scale;
+            $(this).css({
+              transform: `matrix(${scale}, 0, 0, ${scale}, ${x}, ${y})`
+            });
+            return false;
+          });
+
+          $('#map').on('dragstart',function(event) {
+            var $this = $(this);
+            const img = new Image();
+            event.originalEvent.dataTransfer.setDragImage(img, -99999, -99999);
+          });
+
+        </script>
+  </body>
+</html>
